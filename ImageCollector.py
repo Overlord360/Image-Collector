@@ -2,11 +2,12 @@ import os, sys
 import argparse
 
 from concurrent.futures import ProcessPoolExecutor
-from shutil import copyfile
+from shutil import copyfile, copystat
 
 from tqdm import tqdm
 
 IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".svg", ".webp"]
+MAX_WORKERS = 1
 
 def main(args):
     print(f"Collecting images from {args.directory}")
@@ -24,14 +25,27 @@ def main(args):
     src_list, dst_list = check_if_file_exists(src_list, dst_list)
     print(f"Removed {size - len(src_list)} files that already exist.")
     print("*************")
+    if args.workers > 0:
+        MAX_WORKERS = args.workers
+    else:
+        MAX_WORKERS = os.cpu_count()
+    print(f"Using {MAX_WORKERS} workers.")
     _ = copy_images(src_list, dst_list)
+    
+    if args.metadata:
+        _ = copy_image_metadata(src_list, dst_list)
 
     sys.exit(0)
 
 def copy_images(src_list, dst_list):
     print(f"Copying {len(src_list)} images to {args.output}")
-    with ProcessPoolExecutor() as executor:
+    with ProcessPoolExecutor(max_workers=MAX_WORKERS) as executor:
         results = list(tqdm(executor.map(copyfile, src_list, dst_list), total=len(src_list)))
+    return results
+def copy_image_metadata(src_list, dst_list):
+    print(f"Copying metadata for images:")
+    with ProcessPoolExecutor(max_workers=MAX_WORKERS) as executor:
+        results = list(tqdm(executor.map(copystat, src_list, dst_list), total=len(src_list)))
     return results
 
 # recursively find all images in the directory and subdirectories
@@ -81,6 +95,8 @@ def argparse_builder():
     parser = argparse.ArgumentParser(description="Collect images from a directory and its subdirectories. and copy to a new directory.")
     parser.add_argument("directory", type=str, help="The directory to search for images.")
     parser.add_argument("output", type=str, help="The directory to copy the images to.")
+    parser.add_argument("--workers", type=int, default=0, help="The number of workers to use for copying images.")
+    parser.add_arguement("-m", "--metadata", action="store_true", help="Copy metadata for images.")
     return parser
 
 if __name__ == "__main__":
