@@ -96,7 +96,7 @@ def argparse_builder():
     parser.add_argument("directory", type=str, help="The directory to search for images.")
     parser.add_argument("output", type=str, help="The directory to copy the images to.")
     parser.add_argument("--workers", type=int, default=0, help="The number of workers to use for copying images.")
-    parser.add_arguement("-m", "--metadata", action="store_true", help="Copy metadata for images.")
+    parser.add_argument("-m", "--metadata", action="store_true", help="Copy metadata for images.")
     return parser
 
 if __name__ == "__main__":
